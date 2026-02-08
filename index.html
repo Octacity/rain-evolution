@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rain Evolution Monitor - Rio de Janeiro</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            padding: 16px 24px;
+            border-bottom: 1px solid #334155;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .header-info {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            grid-template-rows: 1fr 300px;
+            height: calc(100vh - 70px);
+            gap: 1px;
+            background: #334155;
+        }
+
+        .map-section {
+            background: #1e293b;
+            grid-row: span 2;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .sidebar {
+            background: #1e293b;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .panel {
+            padding: 16px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .panel-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .badge {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-normal { background: #166534; color: #86efac; }
+        .badge-attention { background: #854d0e; color: #fde047; }
+        .badge-alert { background: #9a3412; color: #fdba74; }
+        .badge-critical { background: #991b1b; color: #fca5a5; }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .summary-card {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .summary-card.critical { border-color: #dc2626; }
+        .summary-card.alert { border-color: #ea580c; }
+        .summary-card.attention { border-color: #eab308; }
+
+        .summary-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .summary-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        .station-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .station-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #0f172a;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .station-item:hover {
+            background: #1e3a5f;
+        }
+
+        .station-item.raining {
+            border-left-color: #3b82f6;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, #0f172a 100%);
+        }
+
+        .station-item.heavy {
+            border-left-color: #ef4444;
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, #0f172a 100%);
+        }
+
+        .station-name {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .station-value {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .station-trend {
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+
+        .trend-up { color: #ef4444; }
+        .trend-down { color: #22c55e; }
+        .trend-stable { color: #94a3b8; }
+
+        .alert-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            display: flex;
+            gap: 12px;
+            padding: 10px;
+            background: #0f172a;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .alert-icon {
+            font-size: 1.25rem;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-street {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .alert-time {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .chart-section {
+            background: #1e293b;
+            padding: 16px;
+        }
+
+        .chart-container {
+            height: 100%;
+        }
+
+        .tab-container {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        .tab {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            cursor: pointer;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .polygon-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .polygon-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #0f172a;
+            border-radius: 6px;
+            margin-bottom: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .polygon-item:hover {
+            background: #1e3a5f;
+        }
+
+        .polygon-info {
+            flex: 1;
+        }
+
+        .polygon-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .polygon-subtitle {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .refresh-btn {
+            background: #3b82f6;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            color: white;
+            font-size: 0.875rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-btn:hover {
+            background: #2563eb;
+        }
+
+        .refresh-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(15, 23, 42, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #334155;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .hidden { display: none; }
+
+        /* Custom Leaflet styles */
+        .leaflet-popup-content-wrapper {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .leaflet-popup-tip {
+            background: #1e293b;
+        }
+
+        .popup-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .popup-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            padding: 2px 0;
+        }
+
+        .popup-label {
+            color: #94a3b8;
+        }
+
+        .error-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #991b1b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            z-index: 10001;
+            display: none;
+        }
+
+        .error-toast.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        .city-trend {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #0f172a;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .city-trend-icon {
+            font-size: 2rem;
+        }
+
+        .city-trend-text {
+            flex: 1;
+        }
+
+        .city-trend-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .city-trend-subtitle {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .filter-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #94a3b8;
+        }
+
+        .filter-btn.active {
+            background: #334155;
+            color: #e2e8f0;
+        }
+
+        .interval-selector {
+            display: flex;
+            gap: 4px;
+        }
+
+        .interval-btn {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #94a3b8;
+        }
+
+        .interval-btn.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+    </div>
+
+    <div class="error-toast" id="errorToast"></div>
+
+    <header class="header">
+        <h1>Rain Evolution Monitor</h1>
+        <div class="header-info">
+            <div class="status-indicator">
+                <div class="status-dot" id="statusDot"></div>
+                <span id="lastUpdate">Connecting...</span>
+            </div>
+            <div class="interval-selector">
+                <button class="interval-btn active" data-interval="30000">30s</button>
+                <button class="interval-btn" data-interval="60000">1m</button>
+                <button class="interval-btn" data-interval="300000">5m</button>
+            </div>
+            <button class="refresh-btn" id="refreshBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                </svg>
+                Refresh
+            </button>
+        </div>
+    </header>
+
+    <div class="main-container">
+        <div class="map-section">
+            <div id="map"></div>
+        </div>
+
+        <div class="sidebar">
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">City Overview</span>
+                </div>
+                <div class="city-trend" id="cityTrend">
+                    <div class="city-trend-icon" id="cityTrendIcon">-</div>
+                    <div class="city-trend-text">
+                        <div class="city-trend-title" id="cityTrendTitle">Loading...</div>
+                        <div class="city-trend-subtitle" id="cityTrendSubtitle">Analyzing data</div>
+                    </div>
+                </div>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <div class="summary-value" id="activeStations">-</div>
+                        <div class="summary-label">Stations Raining</div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="summary-value" id="avgRain">-</div>
+                        <div class="summary-label">Avg 1h (mm)</div>
+                    </div>
+                    <div class="summary-card alert" id="floodAlertsCard">
+                        <div class="summary-value" id="floodAlerts">-</div>
+                        <div class="summary-label">Flood Alerts</div>
+                    </div>
+                    <div class="summary-card attention" id="polygonAlertsCard">
+                        <div class="summary-value" id="polygonAlerts">-</div>
+                        <div class="summary-label">Areas Affected</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Rain Stations</span>
+                    <span class="badge badge-normal" id="stationCount">0</span>
+                </div>
+                <div class="filter-controls">
+                    <button class="filter-btn active" data-sort="rain">By Rain</button>
+                    <button class="filter-btn" data-sort="name">By Name</button>
+                    <button class="filter-btn" data-sort="trend">By Trend</button>
+                </div>
+                <div class="station-list" id="stationList"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Affected Areas</span>
+                    <span class="badge badge-attention" id="polygonCount">0</span>
+                </div>
+                <div class="polygon-list" id="polygonList"></div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Waze Flood Alerts</span>
+                    <span class="badge badge-alert" id="alertCount">0</span>
+                </div>
+                <div class="alert-list" id="alertList"></div>
+            </div>
+        </div>
+
+        <div class="chart-section">
+            <div class="tab-container">
+                <button class="tab active" data-chart="evolution">Rain Evolution</button>
+                <button class="tab" data-chart="distribution">Distribution</button>
+                <button class="tab" data-chart="top10">Top 10 Stations</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="mainChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
