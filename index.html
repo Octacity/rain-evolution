@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rain Evolution Monitor - Rio de Janeiro</title>
+    <title>Flood Evolution Monitor - Rio de Janeiro</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -18,40 +18,77 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0f172a;
             color: #e2e8f0;
-            min-height: 100vh;
+            height: 100vh;
+            overflow: hidden;
         }
 
+        /* --- Layout Grid --- */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            grid-template-rows: 56px 1fr;
+            height: 100vh;
+        }
+
+        /* --- Header --- */
         .header {
+            grid-column: 1 / -1;
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-            padding: 16px 24px;
+            padding: 0 20px;
             border-bottom: 1px solid #334155;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
         .header h1 {
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: 600;
             color: #60a5fa;
         }
 
-        .header-info {
+        .severity-pill {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .severity-pill.severity-0 { background: #166534; color: #86efac; }
+        .severity-pill.severity-1 { background: #854d0e; color: #fde047; }
+        .severity-pill.severity-2 { background: #9a3412; color: #fdba74; }
+        .severity-pill.severity-3 { background: #991b1b; color: #fca5a5; animation: pulse-bg 1.5s infinite; }
+
+        @keyframes pulse-bg {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .header-right {
             display: flex;
-            gap: 24px;
+            gap: 16px;
             align-items: center;
         }
 
         .status-indicator {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-size: 0.875rem;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: #94a3b8;
         }
 
         .status-dot {
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             border-radius: 50%;
             background: #22c55e;
             animation: pulse 2s infinite;
@@ -60,397 +97,6 @@
         @keyframes pulse {
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
-        }
-
-        .main-container {
-            display: grid;
-            grid-template-columns: 1fr 400px;
-            grid-template-rows: 1fr 300px;
-            height: calc(100vh - 70px);
-            gap: 1px;
-            background: #334155;
-        }
-
-        .map-section {
-            background: #1e293b;
-            grid-row: span 2;
-        }
-
-        #map {
-            width: 100%;
-            height: 100%;
-        }
-
-        .sidebar {
-            background: #1e293b;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .panel {
-            padding: 16px;
-            border-bottom: 1px solid #334155;
-        }
-
-        .panel-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-
-        .panel-title {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #94a3b8;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .badge {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .badge-normal { background: #166534; color: #86efac; }
-        .badge-attention { background: #854d0e; color: #fde047; }
-        .badge-alert { background: #9a3412; color: #fdba74; }
-        .badge-critical { background: #991b1b; color: #fca5a5; }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-        }
-
-        .summary-card {
-            background: #0f172a;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid #334155;
-        }
-
-        .summary-card.critical { border-color: #dc2626; }
-        .summary-card.alert { border-color: #ea580c; }
-        .summary-card.attention { border-color: #eab308; }
-
-        .summary-value {
-            font-size: 1.75rem;
-            font-weight: 700;
-            line-height: 1;
-        }
-
-        .summary-label {
-            font-size: 0.75rem;
-            color: #94a3b8;
-            margin-top: 4px;
-        }
-
-        .station-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .station-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: #0f172a;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            border-left: 3px solid transparent;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .station-item:hover {
-            background: #1e3a5f;
-        }
-
-        .station-item.raining {
-            border-left-color: #3b82f6;
-            background: linear-gradient(90deg, rgba(59, 130, 246, 0.1) 0%, #0f172a 100%);
-        }
-
-        .station-item.heavy {
-            border-left-color: #ef4444;
-            background: linear-gradient(90deg, rgba(239, 68, 68, 0.1) 0%, #0f172a 100%);
-        }
-
-        .station-name {
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .station-value {
-            font-size: 0.875rem;
-            font-weight: 600;
-            color: #60a5fa;
-        }
-
-        .station-trend {
-            font-size: 0.75rem;
-            margin-left: 8px;
-        }
-
-        .trend-up { color: #ef4444; }
-        .trend-down { color: #22c55e; }
-        .trend-stable { color: #94a3b8; }
-
-        .alert-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .alert-item {
-            display: flex;
-            gap: 12px;
-            padding: 10px;
-            background: #0f172a;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            border-left: 3px solid #3b82f6;
-        }
-
-        .alert-icon {
-            font-size: 1.25rem;
-        }
-
-        .alert-content {
-            flex: 1;
-        }
-
-        .alert-street {
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .alert-time {
-            font-size: 0.75rem;
-            color: #94a3b8;
-        }
-
-        .chart-section {
-            background: #1e293b;
-            padding: 16px;
-        }
-
-        .chart-container {
-            height: 100%;
-        }
-
-        .tab-container {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .tab {
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            font-weight: 500;
-            cursor: pointer;
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #94a3b8;
-            transition: all 0.2s;
-        }
-
-        .tab.active {
-            background: #3b82f6;
-            border-color: #3b82f6;
-            color: white;
-        }
-
-        .polygon-list {
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .polygon-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: #0f172a;
-            border-radius: 6px;
-            margin-bottom: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .polygon-item:hover {
-            background: #1e3a5f;
-        }
-
-        .polygon-info {
-            flex: 1;
-        }
-
-        .polygon-title {
-            font-size: 0.875rem;
-            font-weight: 500;
-        }
-
-        .polygon-subtitle {
-            font-size: 0.75rem;
-            color: #94a3b8;
-        }
-
-        .refresh-btn {
-            background: #3b82f6;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 6px;
-            color: white;
-            font-size: 0.875rem;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .refresh-btn:hover {
-            background: #2563eb;
-        }
-
-        .refresh-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .loading-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(15, 23, 42, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 10000;
-        }
-
-        .loading-spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #334155;
-            border-top-color: #3b82f6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .hidden { display: none; }
-
-        /* Custom Leaflet styles */
-        .leaflet-popup-content-wrapper {
-            background: #1e293b;
-            color: #e2e8f0;
-            border-radius: 8px;
-        }
-
-        .leaflet-popup-tip {
-            background: #1e293b;
-        }
-
-        .popup-title {
-            font-weight: 600;
-            font-size: 0.9rem;
-            margin-bottom: 8px;
-        }
-
-        .popup-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.8rem;
-            padding: 2px 0;
-        }
-
-        .popup-label {
-            color: #94a3b8;
-        }
-
-        .error-toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #991b1b;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 8px;
-            z-index: 10001;
-            display: none;
-        }
-
-        .error-toast.show {
-            display: block;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-
-        .city-trend {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px;
-            background: #0f172a;
-            border-radius: 8px;
-            margin-bottom: 12px;
-        }
-
-        .city-trend-icon {
-            font-size: 2rem;
-        }
-
-        .city-trend-text {
-            flex: 1;
-        }
-
-        .city-trend-title {
-            font-size: 1rem;
-            font-weight: 600;
-        }
-
-        .city-trend-subtitle {
-            font-size: 0.75rem;
-            color: #94a3b8;
-        }
-
-        .filter-controls {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-        }
-
-        .filter-btn {
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            cursor: pointer;
-            background: #0f172a;
-            border: 1px solid #334155;
-            color: #94a3b8;
-        }
-
-        .filter-btn.active {
-            background: #334155;
-            color: #e2e8f0;
         }
 
         .interval-selector {
@@ -473,42 +119,672 @@
             border-color: #3b82f6;
             color: white;
         }
+
+        .refresh-btn {
+            background: transparent;
+            border: 1px solid #334155;
+            padding: 6px 10px;
+            border-radius: 6px;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .refresh-btn:hover { border-color: #60a5fa; color: #60a5fa; }
+        .refresh-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* --- Left Column (chart + map) --- */
+        .left-column {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Charts Row --- */
+        .charts-row {
+            display: flex;
+            height: 40%;
+            flex-shrink: 0;
+            border-bottom: 1px solid #334155;
+        }
+
+        .chart-panel {
+            flex: 1;
+            background: #1e293b;
+            padding: 8px 14px 10px;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .chart-panel + .chart-panel {
+            border-left: 1px solid #334155;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .chart-label {
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .chart-tabs {
+            display: flex;
+            gap: 4px;
+        }
+
+        .chart-tab {
+            padding: 3px 8px;
+            border-radius: 5px;
+            font-size: 0.65rem;
+            font-weight: 500;
+            cursor: pointer;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #94a3b8;
+            transition: all 0.15s;
+        }
+
+        .chart-tab.active {
+            background: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .chart-tab:hover:not(.active) {
+            border-color: #60a5fa;
+            color: #e2e8f0;
+        }
+
+        .chart-canvas-wrap {
+            flex: 1;
+            min-height: 0;
+        }
+
+        /* --- Map --- */
+        .map-section {
+            background: #1e293b;
+            flex: 1;
+            min-height: 0;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* --- Event Panel --- */
+        .event-panel {
+            background: #1e293b;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #334155;
+        }
+
+        .panel {
+            padding: 14px 16px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .panel-title {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 10px;
+        }
+
+        /* Severity Gauge */
+        .severity-gauge {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .severity-level {
+            flex: 1;
+            height: 6px;
+            background: #0f172a;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .severity-bar {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s ease, background 0.5s ease;
+        }
+
+        .severity-info {
+            min-width: 140px;
+        }
+
+        .severity-label {
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .severity-detail {
+            font-size: 0.72rem;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+
+        .severity-rain-trend {
+            font-size: 0.68rem;
+            margin-top: 3px;
+        }
+
+        /* Key Metrics */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .metric-card {
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .metric-label {
+            font-size: 0.65rem;
+            color: #64748b;
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+
+        .metric-card.metric-waze .metric-value { color: #f97316; }
+        .metric-card.metric-areas .metric-value { color: #eab308; }
+        .metric-card.metric-overlap .metric-value { color: #dc2626; }
+        .metric-card.metric-stations .metric-value { color: #3b82f6; }
+        .metric-card.metric-rain .metric-value { color: #60a5fa; }
+        .metric-card.metric-max-rain .metric-value { color: #ef4444; }
+
+        /* Active Events */
+        .event-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 7px 8px;
+            background: #0f172a;
+            border-radius: 5px;
+            margin-bottom: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .event-item:hover { background: #1e3a5f; }
+
+        .event-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .event-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .event-title {
+            font-size: 0.8rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .event-sub {
+            font-size: 0.68rem;
+            color: #64748b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .event-meta {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 2px;
+            flex-shrink: 0;
+        }
+
+        .event-waze-count {
+            font-size: 0.65rem;
+            color: #f97316;
+        }
+
+        .event-empty {
+            font-size: 0.8rem;
+            color: #22c55e;
+            padding: 8px 0;
+        }
+
+        .badge {
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .badge-normal { background: #166534; color: #86efac; }
+        .badge-attention { background: #854d0e; color: #fde047; }
+        .badge-alert { background: #9a3412; color: #fdba74; }
+        .badge-critical { background: #991b1b; color: #fca5a5; }
+
+        /* Rain Context */
+        .rain-summary {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .rain-avg {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .rain-active {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .rain-top-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 3px 0;
+            font-size: 0.75rem;
+        }
+
+        .rain-top-name { color: #94a3b8; }
+        .rain-top-value { color: #60a5fa; font-weight: 500; }
+
+        /* Notable Timeline */
+        .timeline-list {
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            padding: 5px 0;
+        }
+
+        .timeline-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            margin-top: 5px;
+            flex-shrink: 0;
+        }
+
+        .timeline-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .timeline-time {
+            font-size: 0.65rem;
+            color: #64748b;
+            margin-right: 6px;
+        }
+
+        .timeline-msg {
+            font-size: 0.75rem;
+            color: #cbd5e1;
+        }
+
+        /* City Trend */
+        .city-trend {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: #0f172a;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .city-trend-icon { font-size: 2rem; }
+
+        .city-trend-text { flex: 1; }
+
+        .city-trend-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .city-trend-subtitle {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        /* Summary Grid */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .summary-card {
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+        }
+
+        .summary-card.alert { border-color: #ea580c; }
+        .summary-card.attention { border-color: #eab308; }
+
+        .summary-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .summary-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 4px;
+        }
+
+        /* Station List */
+        .station-list {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .station-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 10px;
+            background: #0f172a;
+            border-radius: 5px;
+            margin-bottom: 3px;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: background 0.15s;
+            font-size: 0.8rem;
+        }
+
+        .station-item:hover { background: #1e3a5f; }
+
+        .station-item.raining {
+            border-left-color: #3b82f6;
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.08) 0%, #0f172a 100%);
+        }
+
+        .station-item.heavy {
+            border-left-color: #ef4444;
+            background: linear-gradient(90deg, rgba(239, 68, 68, 0.08) 0%, #0f172a 100%);
+        }
+
+        .station-name { font-weight: 500; }
+
+        .station-value {
+            font-weight: 600;
+            color: #60a5fa;
+        }
+
+        .station-trend {
+            font-size: 0.7rem;
+            margin-left: 6px;
+        }
+
+        .trend-up { color: #ef4444; }
+        .trend-down { color: #22c55e; }
+        .trend-stable { color: #94a3b8; }
+
+        .filter-controls {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .filter-btn {
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            cursor: pointer;
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: #94a3b8;
+        }
+
+        .filter-btn.active {
+            background: #334155;
+            color: #e2e8f0;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .panel-header .panel-title {
+            margin-bottom: 0;
+        }
+
+        .panel-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            background: #334155;
+            color: #94a3b8;
+        }
+
+        /* Waze Alert List */
+        .alert-list {
+            max-height: 160px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            display: flex;
+            gap: 8px;
+            padding: 6px 8px;
+            background: #0f172a;
+            border-radius: 5px;
+            margin-bottom: 3px;
+            border-left: 3px solid #f97316;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        .alert-item:hover { background: #1e3a5f; }
+
+        .alert-icon { font-size: 1rem; }
+
+        .alert-content { flex: 1; min-width: 0; }
+
+        .alert-street {
+            font-size: 0.78rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .alert-time {
+            font-size: 0.65rem;
+            color: #64748b;
+        }
+
+        /* --- Overlays --- */
+        .loading-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 23, 42, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #334155;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .hidden { display: none; }
+
+        .error-toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #991b1b;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            z-index: 10001;
+            display: none;
+            font-size: 0.85rem;
+        }
+
+        .error-toast.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        /* Leaflet popup overrides */
+        .leaflet-popup-content-wrapper {
+            background: #1e293b;
+            color: #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .leaflet-popup-tip { background: #1e293b; }
+
+        .popup-title {
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+
+        .popup-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.78rem;
+            padding: 2px 0;
+        }
+
+        .popup-label { color: #94a3b8; }
     </style>
 </head>
 <body>
     <div class="loading-overlay" id="loadingOverlay">
         <div class="loading-spinner"></div>
     </div>
-
     <div class="error-toast" id="errorToast"></div>
 
-    <header class="header">
-        <h1>Rain Evolution Monitor</h1>
-        <div class="header-info">
-            <div class="status-indicator">
-                <div class="status-dot" id="statusDot"></div>
-                <span id="lastUpdate">Connecting...</span>
+    <div class="app-layout">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-left">
+                <h1>Flood Evolution Monitor</h1>
+                <span class="severity-pill severity-0" id="severityPill">Normal</span>
             </div>
-            <div class="interval-selector">
-                <button class="interval-btn active" data-interval="30000">30s</button>
-                <button class="interval-btn" data-interval="60000">1m</button>
-                <button class="interval-btn" data-interval="300000">5m</button>
+            <div class="header-right">
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="lastUpdate">Connecting...</span>
+                </div>
+                <div class="interval-selector">
+                    <button class="interval-btn active" data-interval="30000">30s</button>
+                    <button class="interval-btn" data-interval="60000">1m</button>
+                    <button class="interval-btn" data-interval="300000">5m</button>
+                </div>
+                <button class="refresh-btn" id="refreshBtn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                    Refresh
+                </button>
             </div>
-            <button class="refresh-btn" id="refreshBtn">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                </svg>
-                Refresh
-            </button>
-        </div>
-    </header>
+        </header>
 
-    <div class="main-container">
-        <div class="map-section">
-            <div id="map"></div>
+        <!-- Left Column: Charts + Map -->
+        <div class="left-column">
+            <div class="charts-row">
+                <div class="chart-panel">
+                    <div class="chart-header">
+                        <span class="chart-label">Flood Evolution</span>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="floodChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-panel">
+                    <div class="chart-header">
+                        <div class="chart-tabs">
+                            <button class="chart-tab active" data-chart="rain">Rain</button>
+                            <button class="chart-tab" data-chart="distribution">Distribution</button>
+                            <button class="chart-tab" data-chart="top10">Top 10</button>
+                        </div>
+                    </div>
+                    <div class="chart-canvas-wrap">
+                        <canvas id="rainChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="map-section">
+                <div id="map"></div>
+            </div>
         </div>
 
-        <div class="sidebar">
+        <!-- Event Panel -->
+        <div class="event-panel">
             <div class="panel">
                 <div class="panel-header">
                     <span class="panel-title">City Overview</span>
@@ -543,7 +819,7 @@
             <div class="panel">
                 <div class="panel-header">
                     <span class="panel-title">Rain Stations</span>
-                    <span class="badge badge-normal" id="stationCount">0</span>
+                    <span class="panel-badge" id="stationCount">0</span>
                 </div>
                 <div class="filter-controls">
                     <button class="filter-btn active" data-sort="rain">By Rain</button>
@@ -553,31 +829,11 @@
                 <div class="station-list" id="stationList"></div>
             </div>
 
-            <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">Affected Areas</span>
-                    <span class="badge badge-attention" id="polygonCount">0</span>
+            <div class="panel" style="flex: 1;">
+                <div class="panel-title">Notable Moments</div>
+                <div class="timeline-list" id="notableTimeline">
+                    <div class="event-empty">Monitoring for events...</div>
                 </div>
-                <div class="polygon-list" id="polygonList"></div>
-            </div>
-
-            <div class="panel">
-                <div class="panel-header">
-                    <span class="panel-title">Waze Flood Alerts</span>
-                    <span class="badge badge-alert" id="alertCount">0</span>
-                </div>
-                <div class="alert-list" id="alertList"></div>
-            </div>
-        </div>
-
-        <div class="chart-section">
-            <div class="tab-container">
-                <button class="tab active" data-chart="evolution">Rain Evolution</button>
-                <button class="tab" data-chart="distribution">Distribution</button>
-                <button class="tab" data-chart="top10">Top 10 Stations</button>
-            </div>
-            <div class="chart-container">
-                <canvas id="mainChart"></canvas>
             </div>
         </div>
     </div>
